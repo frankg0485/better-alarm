@@ -4,12 +4,33 @@
 # rewrite some methods to do that.
 
 import numpy as np
+import os
 
+from pytube import YouTube
 import librosa
 import librosa.display
+from moviepy.editor import *
+
 from pychorus import find_and_output_chorus
 import pychorus.helpers
 import pychorus.similarity_matrix
+
+
+def get_file(url):
+    video_link = url
+    video = YouTube(video_link)
+    audio = video.streams.filter(only_audio=True, file_extension='mp4').first()
+    if not os.path.exists('./audio/' + video.title + '.mp3'):
+        audio.download('./audio')
+        print('downloading audio files . . .')
+        mp4_without_frames = AudioFileClip('./audio/' + video.title + '.mp4')
+        mp4_without_frames.write_audiofile('./audio/' + video.title + '.mp3')
+        mp4_without_frames.close()
+        os.remove('./audio/' + video.title + '.mp4')
+    print('finding start time . . .')
+    start_time = int(return_chorus('./audio/' + video.title + '.mp3'))
+    print('found start time.')
+    return start_time
 
 def best_segment(line_scores):
     lines_to_sort = []
@@ -41,7 +62,7 @@ def find_first_chorus(time_lag_similarity, time_time_similarity, num_samples, so
     return best_chorus.start / chroma_sr
 
 
-def return_chorus(audio_path):
+def return_chorus(audio_file):
     y, sr = librosa.load(audio_file)
     song_length = y.shape[0] / float(sr)
 
@@ -56,7 +77,3 @@ def return_chorus(audio_path):
         return 0
     else:
         return start
-
-if __name__ == '__main__':
-    audio_file = ('audio\\counting-stars.mp3')
-    print(int(return_chorus(audio_file)))

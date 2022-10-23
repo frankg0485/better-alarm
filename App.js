@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, TextInput, Button, View } from 'react-native';
 import { Audio } from 'expo-av';
 import { getSongURL } from './backend';
+import axios from 'axios';
 //import { Sound } from 'expo-av/build/Audio';
 
 //allows for song to be played in the background (doesn't work lol)
@@ -37,12 +38,44 @@ export default function App() {
     const finalURL = await getSongURL(url);
     await song.current.loadAsync(
       { uri: finalURL },
-      { shouldPlay: true },
+      { shouldPlay: false },
     );
 
+    console.log(url)
+
+    var startTime = 0;
+    await axios.post("http://128.61.119.94:5000", {
+      "url": url
+    })
+      .then((response) => {
+        console.log('this is the response from the python server on a post request of listname ', JSON.stringify(response));
+        startTime = response['data']['start_time']
+    })
+      .catch((error) => {
+        console.log('here is the error on a post request from the python server of listname ', error);
+    });
+    // try {
+    //   const response = await fetch('http://128.61.119.94:5000', {
+    //     method: 'POST',
+    //     headers: {
+    //       Accept: 'application/json',
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify({
+    //       'url': url
+    //     })
+    //   });
+    //   const json = await response.json();
+    //   console.log(json.start_time);
+    // } catch (error) {
+    //   console.error(error);
+    // }
+
+
+    console.log(startTime)
     setIndicator('Playing...');
     console.log('Playing song...');
-    await song.current.playAsync();
+    await song.current.playFromPositionAsync(startTime * 1000);
   }
 
   return (
